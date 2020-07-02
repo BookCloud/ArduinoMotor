@@ -76,9 +76,21 @@ node2.writeSingleRegister(0x2031,8); // control, enable motor
 void loop()
 {
 
+//Write to the the motor speed in RPM
 node.writeSingleRegister(0x203A,100); //target speed, rpm
 node2.writeSingleRegister(0x203A,100); //target speed, rpm
-  
+
+
+
+
+/*Reads the encoder values using 2 registers and each [getResponseBuffer] reads 16bit value but encoder feedback is 32bit 
+  thus requiring 2 register to read encoder feedback*/
+uint16_t result;
+result = node.readHoldingRegisters(0x202A,2);
+Serial.println(node.getResponseBuffer(0)) // After every 65536 count this register counts +1
+Serial.println(node.getResponseBuffer(1); // Gives encoder from 0 till 65536
+
+
 
 //node.writeSingleRegister(0x203A,100); //target speed, rpm
 //node2.writeSingleRegister(0x203A,100); //target speed, rpm
