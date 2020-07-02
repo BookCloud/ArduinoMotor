@@ -1,8 +1,8 @@
 #include <ModbusMaster.h>               //Library for using ModbusMaster
 
-#define MAX485_DE      3
+#define MAX485_DE      3                 //put for RSE pin
 #define MAX485_RE_NEG  2
-#define MAX485_DE2      7
+#define MAX485_DE2      7                //put for RSE pin
 #define MAX485_RE_NEG2  6
 const byte numChars = 32;
 char receivedChars[numChars];   // an array to store the received data
