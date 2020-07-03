@@ -87,7 +87,7 @@ node2.writeSingleRegister(0x203A,100); //target speed, rpm
   thus requiring 2 register to read encoder feedback*/
 uint16_t result;
 result = node.readHoldingRegisters(0x202A,2);
-Serial.println(node.getResponseBuffer(0)) // After every 65536 count this register counts +1
+Serial.println(node.getResponseBuffer(0)); // After every 65536 count this register counts +1
 Serial.println(node.getResponseBuffer(1); // Gives encoder from 0 till 65536
 
 
