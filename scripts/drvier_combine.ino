@@ -10,7 +10,7 @@
 ros::NodeHandle nh; //start ros node
 
 //Hardware measurements
-const float Dbase = 0.25; //distance between wheels in metres
+const float Dbase = 0.3; //distance between wheels in metres
 const float dbase = Dbase/2;
 const float wheelD = 0.165; //diameter of wheel
 const float wheelR = wheelD/2;
@@ -22,8 +22,8 @@ float angular_vel = 0.0;
 float linear_vel = 0.0;
 float Vright = 0.0; //Velocity of right wheel
 float Vleft = 0.0; //Velocity of left wheel
-int rpm_left = 0;
-int rpm_right = 0;
+float rpm_left = 0;
+float rpm_right = 0;
 
 //Motor variables , Common the DE and RE_NEG of BOTH motors
 #define MAX485_DE      3                 //put for RSE pin
@@ -143,10 +143,13 @@ sei();//allow interrupts*/
 
 }
 
-ISR(TIMER4_COMPA_vect){//timer1 interrupt 1Hz toggles pin 13 (LED)
+float count_dracula;
+
+/*ISR(TIMER4_COMPA_vect){//timer1 interrupt 1Hz toggles pin 13 (LED)
 //generates pulse wave of frequency 1Hz/2 = 0.5kHz (takes two cycles for full wave- toggle high then toggle low)
-   enc_newL = node2.getResponseBuffer(1);
-   enc_newR = node.getResponseBuffer(1);
+   count_dracula = 65536 - node2.getResponseBuffer(0);
+   enc_newL = count_dracula;
+   enc_newR = node.getResponseBuffer(0);
    inc_encL = enc_newL - enc_oldL;
    inc_encR = enc_newR - enc_oldR;
 
@@ -175,14 +178,14 @@ ISR(TIMER4_COMPA_vect){//timer1 interrupt 1Hz toggles pin 13 (LED)
 
    enc_oldL = enc_newL;
    enc_oldR = enc_newR;
-}
+}*/
 
 unsigned long timeElapsed;
 
 void loop() {
   //Calculate velocity of each wheel
-  Vleft = linear_vel + angular_vel * dbase;
-  Vright = linear_vel - angular_vel * dbase;
+  Vleft = linear_vel + (angular_vel * dbase);
+  Vright = linear_vel - (angular_vel * dbase);
   //Calculate pwm to send to each motor
   rpm_left = Vleft * (60/dpr);
   rpm_right = Vright * (60/dpr);
@@ -194,14 +197,19 @@ void loop() {
   result2 = node2.readHoldingRegisters(0x202A,2);
 
   unsigned long currentTime = millis();
-  if((currentTime - timeElapsed) >= 500){  //might be broken
+  if(timeElapsed >= 500){  //might be broken
     linear_vel = 0;
     angular_vel = 0;
   }
+
+   count_dracula = 65535 - node2.getResponseBuffer(0);
+  
    
-  encR.data = node.getResponseBuffer(1);
+  
+   
+  encR.data = node.getResponseBuffer(0);
   encRPub.publish( &encR);
-  encL.data = node2.getResponseBuffer(1);
+  encL.data = count_dracula;
   encLPub.publish( &encL);
   nh.spinOnce();
   
