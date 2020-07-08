@@ -196,9 +196,44 @@ void loop() {
   result = node.readHoldingRegisters(0x202A,2);
   result2 = node2.readHoldingRegisters(0x202A,2);
 
+   count_dracula = 65535 - node2.getResponseBuffer(0);
+   enc_newL = count_dracula;
+   enc_newR = node.getResponseBuffer(0);  
 
+   inc_encL = enc_newL - enc_oldL;
+   inc_encR = enc_newR - enc_oldR;
 
+   new_time = millis();
+   
+  timeElapsed = new_time - old_time
 
+   length_error = (inc_encR - inc_encL) * rate_enc;
+
+   ang_z_error = length_error/(Dbase);
+   ang_z = ang_z + ang_z_error;
+
+   delta_d = ((inc_encL + inc_encR)/2) * rate_enc;
+
+   Xw = Xw + (delta_d * cos(ang_z));
+   Yw = Yw + (delta_d * sin(ang_z));
+
+  t.header.frame_id = odom;
+  t.child_frame_id = base_link;
+  
+  t.transform.translation.x = Xw;
+  t.transform.translation.y = Yw;
+  
+  t.transform.rotation = tf::createQuaternionFromYaw(ang_z);
+  t.header.stamp = nh.now();
+  
+  broadcaster.sendTransform(t);
+  nh.spinOnce();
+  
+
+   enc_oldL = enc_newL;
+   enc_oldR = enc_newR;
+
+  old_time = new_time;
 
   unsigned long currentTime = millis();
   if(timeElapsed >= 500){  //might be broken
@@ -206,9 +241,11 @@ void loop() {
     angular_vel = 0;
   }
 
+
+
+
+
    count_dracula = 65535 - node2.getResponseBuffer(0);
-  
-   
   
    
   encR.data = node.getResponseBuffer(0);
