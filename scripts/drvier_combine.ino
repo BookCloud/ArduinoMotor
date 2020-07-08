@@ -10,12 +10,12 @@
 ros::NodeHandle nh; //start ros node
 
 //Hardware measurements
-const float Dbase = 0.3; //distance between wheels in metres
+const float Dbase = 0.25; //distance between wheels in metres
 const float dbase = Dbase/2;
 const float wheelD = 0.165; //diameter of wheel
 const float wheelR = wheelD/2;
-const float rpm = 0.5307; //rev per minute of motor
-const int sum_enc = 4096; //pulse per rev of encoder
+const float dpr = 0.5307; //dist per rev of wheel
+const int sum_enc = 4096; //total pulses per rev of encoder
 const float rate_enc = (2*PI*wheelR) / sum_enc;
 
 float angular_vel = 0.0;
@@ -25,7 +25,7 @@ float Vleft = 0.0; //Velocity of left wheel
 int rpm_left = 0;
 int rpm_right = 0;
 
-//Motor variables
+//Motor variables , Common the DE and RE_NEG of BOTH motors
 #define MAX485_DE      3                 //put for RSE pin
 #define MAX485_RE_NEG  2
 #define MAX485_DE2      7                //put for RSE pin
@@ -184,8 +184,8 @@ void loop() {
   Vleft = linear_vel + angular_vel * dbase;
   Vright = linear_vel - angular_vel * dbase;
   //Calculate pwm to send to each motor
-  rpm_left = Vleft * (60/rpm);
-  rpm_right = Vright * (60/rpm);
+  rpm_left = Vleft * (60/dpr);
+  rpm_right = Vright * (60/dpr);
 
   node.writeSingleRegister(0x203A,rpm_right); //target speed, rpm (negative)
   node2.writeSingleRegister(0x203A,rpm_left*-1); //target speed, rpm
@@ -194,7 +194,7 @@ void loop() {
   result2 = node2.readHoldingRegisters(0x202A,2);
 
   unsigned long currentTime = millis();
-  if(timeElapsed >= 500){
+  if((currentTime - timeElapsed) >= 500){  //might be broken
     linear_vel = 0;
     angular_vel = 0;
   }
