@@ -147,7 +147,7 @@ float count_dracula;
 
 /*ISR(TIMER4_COMPA_vect){//timer1 interrupt 1Hz toggles pin 13 (LED)
 //generates pulse wave of frequency 1Hz/2 = 0.5kHz (takes two cycles for full wave- toggle high then toggle low)
-   count_dracula = 65536 - node2.getResponseBuffer(0);
+   count_dracula = 65535 - node2.getResponseBuffer(0);
    enc_newL = count_dracula;
    enc_newR = node.getResponseBuffer(0);
    inc_encL = enc_newL - enc_oldL;
@@ -195,6 +195,10 @@ void loop() {
 
   result = node.readHoldingRegisters(0x202A,2);
   result2 = node2.readHoldingRegisters(0x202A,2);
+
+
+
+
 
   unsigned long currentTime = millis();
   if(timeElapsed >= 500){  //might be broken
