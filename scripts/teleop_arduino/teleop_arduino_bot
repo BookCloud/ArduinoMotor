@@ -96,6 +96,7 @@ void setup() {
 
 
 uint16_t result;
+uint16_t result2;
 void loop() {
 
   Vleft = (linear_vel + (angular_vel*0.12)) * (60/0.5307);
@@ -105,7 +106,7 @@ Vright = (linear_vel - (angular_vel*0.12)) * (60/0.5307);
   node2.writeSingleRegister(0x203A,Vleft); //target speed, rpm
 
    result = node.readHoldingRegisters(0x202A,2);
-   result = node2.readHoldingRegisters(0x202A,2);
+   result2 = node2.readHoldingRegisters(0x202A,2);
 
    Serial.println(node.getResponseBuffer(0));
    Serial.println(node.getResponseBuffer(1));
