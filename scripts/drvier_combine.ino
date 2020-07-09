@@ -196,26 +196,14 @@ void loop() {
   result = node.readHoldingRegisters(0x202A,2);
   result2 = node2.readHoldingRegisters(0x202A,2);
 
-   count_dracula = 65535 - node2.getResponseBuffer(0);
-   enc_newL = count_dracula;
-   enc_newR = node.getResponseBuffer(0);  
+  Left_Wheel_enc();
+  Right_Wheel_enc();
 
-   inc_encL = enc_newL - enc_oldL;
-   inc_encR = enc_newR - enc_oldR;
-
-   new_time = millis();
-   
+  new_time = millis();
   timeElapsed = new_time - old_time
 
-   length_error = (inc_encR - inc_encL) * rate_enc;
+  Calculate_Odom();
 
-   ang_z_error = length_error/(Dbase);
-   ang_z = ang_z + ang_z_error;
-
-   delta_d = ((inc_encL + inc_encR)/2) * rate_enc;
-
-   Xw = Xw + (delta_d * cos(ang_z));
-   Yw = Yw + (delta_d * sin(ang_z));
 
   t.header.frame_id = odom;
   t.child_frame_id = base_link;
@@ -255,4 +243,85 @@ void loop() {
   nh.spinOnce();
   
   
+}
+
+
+
+
+void Left_Wheel_enc()
+{
+//Reads the register 0 to determine the changes in direction
+overflow_count_L = 65535 - node2.getResponseBuffer(0);
+//Reads the register 1 to determine the change in distance travelled
+enc_newL = node2.getResponseBuffer(1)
+
+//Left
+  count_newticks_L = overflow_count_L;
+  difference_L = count_newticks_L - count_oldticks_L;
+  count_oldticks_L = count_newticks_L;
+
+//Moving forward
+  if (difference_L > 0 || difference_L == (-65535))
+  {
+    inc_encL = enc_newL - enc_oldR + 65535;  //add 65535 to increase the distance count
+  }
+
+//Moving reverse
+  else if (difference < 0 || difference == 65535)
+  {
+    inc_encL = enc_newL - enc_oldL - 65535;  //minus 65535 to decrease the distance count
+  }
+//Stationary Position condition
+  else
+  {
+    inc_encL = enc_newL - enc_oldL;
+  }
+//Puts back the new count in to the old
+enc_oldL = enc_newL;
+}
+
+
+void Right_Wheel_enc()
+{
+overflow_count_R = node.getResponseBuffer(0);
+enc_newR = node.getResponseBuffer(1);
+
+//Right
+  count_newticks_R = overflow_count_R;
+  difference_R = count_newticks_R - count_oldticks_R;
+  count_oldticks_R = count_newticks_R;
+
+
+//moving forward
+  if (difference_R > 0 || difference_R == (-65535))
+  { 
+    inc_encR = enc_newR - enc_oldR;
+  }
+
+//moving reverse
+  else if (difference < 0 || difference == 65535)
+  {
+    inc_encR = enc_newR - enc_oldR;  
+  }
+  else
+  {
+    inc_encR = enc_newR - enc_oldR;
+  }
+  enc_oldR = enc_newR; 
+
+}
+
+void Calculate_Odom()
+{
+
+   length_error = (inc_encR - inc_encL) * rate_enc;
+
+   ang_z_error = length_error/(Dbase);
+   ang_z = ang_z + ang_z_error;
+
+   delta_d = ((inc_encL + inc_encR)/2) * rate_enc;
+
+   Xw = Xw + (delta_d * cos(ang_z));
+   Yw = Yw + (delta_d * sin(ang_z));
+
 }
