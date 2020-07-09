@@ -15,7 +15,7 @@ const float dbase = Dbase/2;
 const float wheelD = 0.165; //diameter of wheel
 const float wheelR = wheelD/2;
 const float dpr = 0.5307; //dist per rev of wheel
-const int sum_enc = 4096; //total pulses per rev of encoder
+const int sum_enc = 4096*4; //total pulses per rev of encoder
 const float rate_enc = (2*PI*wheelR) / sum_enc;
 
 float angular_vel = 0.0;
@@ -73,15 +73,15 @@ unsigned long StartTime = millis();
 }
 
 ros::Subscriber<geometry_msgs::Twist> sub_vel("cmd_vel", &messageCb );
-std_msgs::Int32 encL;
+std_msgs::Float32 encL;
 ros::Publisher encLPub("encL", &encL);
-std_msgs::Int32 encR;
+std_msgs::Float32 encR;
 ros::Publisher encRPub("encR", &encR);
 
 
-std_msgs::Int32 incencL;
+std_msgs::Float32 incencL;
 ros::Publisher incencLPub("inc_encL", &incencL);
-std_msgs::Int32 incencR;
+std_msgs::Float32 incencR;
 ros::Publisher incencRPub("inc_encR", &incencR);
 
 
@@ -164,10 +164,6 @@ void loop() {
   result = node.readHoldingRegisters(0x202A,2);
   result2 = node2.readHoldingRegisters(0x202A,2);
 
-  Left_Wheel_enc();
-  
-  Right_Wheel_enc();
-
   //new_time = millis();
   //timeElapsed = new_time - old_time;
 
@@ -199,9 +195,9 @@ void loop() {
   encRPub.publish( &encR);
   encL.data = overflow_count_L;
   encLPub.publish( &encL);
-  incencL.data = Xw;
+  incencL.data = delta_d;
   incencLPub.publish( &incencL);
-  incencR.data = Yw;
+  incencR.data = inc_encR;
   incencRPub.publish( &incencR);
   
   nh.spinOnce();
@@ -218,7 +214,7 @@ void Left_Wheel_enc()
 //Reads the register 0 to determine the changes in direction
 overflow_count_L = 65535 - node2.getResponseBuffer(0);
 //Reads the register 1 to determine the change in distance travelled
-enc_newL = node2.getResponseBuffer(1);
+enc_newL = (node2.getResponseBuffer(1)*-1);
 
 //Left
   count_newticks_L = overflow_count_L;
@@ -280,6 +276,9 @@ enc_newR = node.getResponseBuffer(1);
 void Calculate_Odom()
 {
 
+    Left_Wheel_enc();
+    Right_Wheel_enc();
+    
    length_error = (inc_encR - inc_encL) * rate_enc;
 
    ang_z_error = length_error/(Dbase);
