@@ -43,6 +43,15 @@ float inc_encR;
 float enc_newR = 0;
 float enc_oldR = 0;
 float length_error;
+float overflow_count_L;
+float count_newticks_L;
+float count_oldticks_L = 0;
+float difference_L;
+
+float overflow_count_R;
+float count_newticks_R;
+float count_oldticks_R = 0;
+float difference_R;
 
 float ang_z = 0.0;
 float ang_z_error;
@@ -68,6 +77,13 @@ std_msgs::Int32 encL;
 ros::Publisher encLPub("encL", &encL);
 std_msgs::Int32 encR;
 ros::Publisher encRPub("encR", &encR);
+
+
+std_msgs::Int32 incencL;
+ros::Publisher incencLPub("inc_encL", &incencL);
+std_msgs::Int32 incencR;
+ros::Publisher incencRPub("inc_encR", &incencR);
+
 
 geometry_msgs::TransformStamped t;
 tf::TransformBroadcaster broadcaster;
@@ -98,25 +114,10 @@ void setup() {
   nh.subscribe(sub_vel);
   nh.advertise(encRPub);
   nh.advertise(encLPub);
+  nh.advertise(incencLPub);
+  nh.advertise(incencRPub);
 
 
-  /*cli();//stop interrupts
-
-//set timer4 interrupt at 1Hz
- TCCR4A = 0;// set entire TCCR1A register to 0
- TCCR4B = 0;// same for TCCR1B
- TCNT4  = 0;//initialize counter value to 0
- // set compare match register for 1hz increments
- OCR4A = 15625 ;// = (16*10^6) / (1*1024) - 1 (must be <65536)
- // turn on CTC mode
- TCCR4B |= (1 << WGM12);
- // Set CS12 and CS10 bits for 1024 prescaler
- TCCR4B |= (1 << CS12) | (1 << CS10);  
- // enable timer compare interrupt
- TIMSK4 |= (1 << OCIE4A);
-
-sei();//allow interrupts*/
-  
   pinMode(MAX485_RE_NEG, OUTPUT);
   pinMode(MAX485_DE, OUTPUT);
   pinMode(MAX485_RE_NEG2, OUTPUT);
@@ -147,41 +148,6 @@ sei();//allow interrupts*/
 
 
 
-/*ISR(TIMER4_COMPA_vect){//timer1 interrupt 1Hz toggles pin 13 (LED)
-//generates pulse wave of frequency 1Hz/2 = 0.5kHz (takes two cycles for full wave- toggle high then toggle low)
-   count_dracula = 65535 - node2.getResponseBuffer(0);
-   enc_newL = count_dracula;
-   enc_newR = node.getResponseBuffer(0);
-   inc_encL = enc_newL - enc_oldL;
-   inc_encR = enc_newR - enc_oldR;
-
-   length_error = (inc_encR - inc_encL) * rate_enc;
-
-   ang_z_error = length_error/(Dbase);
-   ang_z = ang_z + ang_z_error;
-
-   delta_d = ((inc_encL + inc_encR)/2) * rate_enc;
-
-   Xw = Xw + (delta_d * cos(ang_z));
-   Yw = Yw + (delta_d * sin(ang_z));
-
-  t.header.frame_id = odom;
-  t.child_frame_id = base_link;
-  
-  t.transform.translation.x = Xw;
-  t.transform.translation.y = Yw;
-  
-  t.transform.rotation = tf::createQuaternionFromYaw(ang_z);
-  t.header.stamp = nh.now();
-  
-  broadcaster.sendTransform(t);
-  nh.spinOnce();
-  
-
-   enc_oldL = enc_newL;
-   enc_oldR = enc_newR;
-}*/
-
 unsigned long timeElapsed;
 
 void loop() {
@@ -199,13 +165,14 @@ void loop() {
   result2 = node2.readHoldingRegisters(0x202A,2);
 
   Left_Wheel_enc();
+  
   Right_Wheel_enc();
 
-  new_time = millis();
-  timeElapsed = new_time - old_time;
+  //new_time = millis();
+  //timeElapsed = new_time - old_time;
 
   Calculate_Odom();
-
+/*
   t.header.frame_id = odom;
   t.child_frame_id = base_link;
   
@@ -220,18 +187,23 @@ void loop() {
   
   old_time = new_time;
 
-  unsigned long currentTime = millis();
+  /*unsigned long currentTime = millis();
   if(timeElapsed >= 500)
   {  //might be broken
     linear_vel = 0;
     angular_vel = 0;
-  }
+  }*/
   
    
   encR.data = node.getResponseBuffer(0);
   encRPub.publish( &encR);
-  encL.data = count_dracula;
+  encL.data = overflow_count_L;
   encLPub.publish( &encL);
+  incencL.data = Xw;
+  incencLPub.publish( &incencL);
+  incencR.data = Yw;
+  incencRPub.publish( &incencR);
+  
   nh.spinOnce();
   
   
@@ -239,10 +211,7 @@ void loop() {
 
 
 
-int overflow_count_L;
-int count_newticks_L;
-int count_oldticks_L;
-int difference_L;
+
 
 void Left_Wheel_enc()
 {
@@ -272,15 +241,11 @@ enc_newL = node2.getResponseBuffer(1);
   {
     inc_encL = enc_newL - enc_oldL;
   }
-//Puts back the new count in to the old
-enc_oldL = enc_newL;
+  //Puts back the new count in to the old
+  enc_oldL = enc_newL;
 }
 
 
-int overflow_count_R;
-int count_newticks_R;
-int count_oldticks_R;
-int difference_R;
 
 void Right_Wheel_enc()
 {
