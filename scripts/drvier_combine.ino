@@ -52,6 +52,8 @@ float delta_d;
 
 char base_link[] = "/base_link";
 char odom[] = "/odom";
+unsigned long new_time;
+unsigned long old_time;
 
 
 //ROS receive cmd_vel data
@@ -200,10 +202,9 @@ void loop() {
   Right_Wheel_enc();
 
   new_time = millis();
-  timeElapsed = new_time - old_time
+  timeElapsed = new_time - old_time;
 
   Calculate_Odom();
-
 
   t.header.frame_id = odom;
   t.child_frame_id = base_link;
@@ -217,23 +218,14 @@ void loop() {
   broadcaster.sendTransform(t);
   nh.spinOnce();
   
-
-   enc_oldL = enc_newL;
-   enc_oldR = enc_newR;
-
   old_time = new_time;
 
   unsigned long currentTime = millis();
-  if(timeElapsed >= 500){  //might be broken
+  if(timeElapsed >= 500)
+  {  //might be broken
     linear_vel = 0;
     angular_vel = 0;
   }
-
-
-
-
-
-   count_dracula = 65535 - node2.getResponseBuffer(0);
   
    
   encR.data = node.getResponseBuffer(0);
@@ -247,13 +239,17 @@ void loop() {
 
 
 
+int overflow_count_L;
+int count_newticks_L;
+int count_oldticks_L;
+int difference_L;
 
 void Left_Wheel_enc()
 {
 //Reads the register 0 to determine the changes in direction
 overflow_count_L = 65535 - node2.getResponseBuffer(0);
 //Reads the register 1 to determine the change in distance travelled
-enc_newL = node2.getResponseBuffer(1)
+enc_newL = node2.getResponseBuffer(1);
 
 //Left
   count_newticks_L = overflow_count_L;
@@ -267,7 +263,7 @@ enc_newL = node2.getResponseBuffer(1)
   }
 
 //Moving reverse
-  else if (difference < 0 || difference == 65535)
+  else if (difference_L < 0 || difference_L == 65535)
   {
     inc_encL = enc_newL - enc_oldL - 65535;  //minus 65535 to decrease the distance count
   }
@@ -280,6 +276,11 @@ enc_newL = node2.getResponseBuffer(1)
 enc_oldL = enc_newL;
 }
 
+
+int overflow_count_R;
+int count_newticks_R;
+int count_oldticks_R;
+int difference_R;
 
 void Right_Wheel_enc()
 {
@@ -299,7 +300,7 @@ enc_newR = node.getResponseBuffer(1);
   }
 
 //moving reverse
-  else if (difference < 0 || difference == 65535)
+  else if (difference_R < 0 || difference_R == 65535)
   {
     inc_encR = enc_newR - enc_oldR;  
   }
