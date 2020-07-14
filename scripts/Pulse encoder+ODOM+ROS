@@ -243,97 +243,24 @@ void loop() {
   
 }
 
-
-
-
-
-void Left_Wheel_enc()
-{
-//Reads the register 0 to determine the changes in direction
-overflow_count_L = 65535 - node2.getResponseBuffer(0);
-//Reads the register 1 to determine the change in distance travelled
-enc_newL = (node2.getResponseBuffer(1)*-1);
-
-//Left
-  count_newticks_L = overflow_count_L;
-  difference_L = count_newticks_L - count_oldticks_L;
-  count_oldticks_L = count_newticks_L;
-
-//Moving forward
-  if (difference_L > 0 || difference_L == (-65535))
-  {
-    inc_encL = enc_newL - enc_oldR + 65535;  //add 65535 to increase the distance count
-  }
-
-//Moving reverse
-  else if (difference_L < 0 || difference_L == 65535)
-  {
-    inc_encL = enc_newL - enc_oldL - 65535;  //minus 65535 to decrease the distance count
-  }
-//Stationary Position condition
-  else
-  {
-    inc_encL = enc_newL - enc_oldL;
-  }
-  //Puts back the new count in to the old
-  enc_oldL = enc_newL;
-}
-
-
-
-void Right_Wheel_enc()
-{
-overflow_count_R = node.getResponseBuffer(0);
-enc_newR = node.getResponseBuffer(1);
-
-//Right
-  count_newticks_R = overflow_count_R;
-  difference_R = count_newticks_R - count_oldticks_R;
-  count_oldticks_R = count_newticks_R;
-
-
-//moving forward
-  if (difference_R > 0 || difference_R == (-65535))
-  { 
-    inc_encR = enc_newR - enc_oldR;
-  }
-
-//moving reverse
-  else if (difference_R < 0 || difference_R == 65535)
-  {
-    inc_encR = enc_newR - enc_oldR;  
-  }
-  else
-  {
-    inc_encR = enc_newR - enc_oldR;
-  }
-  enc_oldR = enc_newR; 
-
-}
-
 void Calculate_Odom()
 {
-
-
-   encoderValue = enc_oldL;
-   encoderValue = enc_oldR;
-
    inc_encL = enc_newL - enc_oldL;
    inc_encR = enc_newR - enc_oldR;
+   moveTime = millis() - doneTime;
+
+   encoderValue = enc_oldL;
+   encoderValue2 = enc_oldR;
 
    length_error = (inc_encR - inc_encL) * rate_enc;
 
    ang_z_error = length_error/(Dbase);
    ang_z = ang_z + ang_z_error;
 
-   delta_d = ((inc_encL + inc_encR)/2) * rate_enc;
+   delta_d = (((inc_encL + inc_encR)/2) * rate_enc)/moveTime;
 
    Xw = Xw + (delta_d * cos(ang_z));
    Yw = Yw + (delta_d * sin(ang_z));
-
-   enc_oldL = enc_newL;
-   enc_oldR = enc_newR;
-
 }
 
 void updateEncoder(){
@@ -341,9 +268,8 @@ int MSB = digitalRead(encoderLB); //MSB = most significant bit
 int LSB = digitalRead(encoderLA); //LSB = least significant bit
 int encoded = (MSB << 1) |LSB; //converting the 2 pin value to single number
 int sum = (lastEncoded << 2) | encoded; //adding it to the previous encoded value
-if(sum == 0b1101 || sum == 0b0100 || sum == 0b0010 || sum == 0b1011) {encoderValue= encoderValue+1.;}
-if(sum == 0b1110 || sum == 0b0111 || sum == 0b0001 || sum == 0b1000) {encoderValue= encoderValue-1;}
-//17000 is the current 1 revolution encoder feedback with ch 1 as A-and ch2 as B+
+if(sum == 0b1101 || sum == 0b0100 || sum == 0b0010 || sum == 0b1011) {encoderValue=encoderValue+1;}
+if(sum == 0b1110 || sum == 0b0111 || sum == 0b0001 || sum == 0b1000) {encoderValue=encoderValue-1;}
 lastEncoded = encoded; //store this value for next time
 }
 
@@ -353,8 +279,6 @@ int MSB = digitalRead(encoderRB); //MSB = most significant bit
 int LSB = digitalRead(encoderRA); //LSB = least significant bit
 int encoded2 = (MSB << 1) |LSB; //converting the 2 pin value to single number
 int sum = (lastEncoded2 << 2) | encoded2; //adding it to the previous encoded value
-if(sum == 0b1101 || sum == 0b0100 || sum == 0b0010 || sum == 0b1011) {encoderValue2= encoderValue2+1;}
-if(sum == 0b1110 || sum == 0b0111 || sum == 0b0001 || sum == 0b1000) {encoderValue2= encoderValue2-1;}
-//17000 is the current 1 revolution encoder feedback with ch 1 as A-and ch2 as B+
+if(sum == 0b1101 || sum == 0b0100 || sum == 0b0010 || sum == 0b1011) {encoderValue2=encoderValue2+1;}
+if(sum == 0b1110 || sum == 0b0111 || sum == 0b0001 || sum == 0b1000) {encoderValue2=encoderValue2-1;}
 lastEncoded2 = encoded2; //store this value for next time
-}
