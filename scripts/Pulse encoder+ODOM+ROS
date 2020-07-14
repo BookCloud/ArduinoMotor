@@ -357,3 +357,4 @@ if(sum == 0b1101 || sum == 0b0100 || sum == 0b0010 || sum == 0b1011) {encoderVal
 if(sum == 0b1110 || sum == 0b0111 || sum == 0b0001 || sum == 0b1000) {encoderValue2= encoderValue2-1;}
 //17000 is the current 1 revolution encoder feedback with ch 1 as A-and ch2 as B+
 lastEncoded2 = encoded2; //store this value for next time
+}
