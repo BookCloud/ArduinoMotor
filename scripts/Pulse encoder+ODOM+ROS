@@ -22,8 +22,8 @@ float angular_vel = 0.0;
 float linear_vel = 0.5;
 float Vright = 0.0; //Velocity of right wheel
 float Vleft = 0.0; //Velocity of left wheel
-float rpm_left = 0;
-float rpm_right = 0;
+float rpm_left = 0.0;
+float rpm_right = 0.0;
 
 //Motor variables , Common the DE and RE_NEG of BOTH motors
 #define MAX485_DE      5                 //put for RSE pin
@@ -173,6 +173,7 @@ unsigned long timeElapsed;
 void loop() {
 
   Serial.println(encoderValue);
+  Serial.println(encoderValue2);
   /*
   Serial.println(node.getResponseBuffer(0));
   Serial.println(65535 - node2.getResponseBuffer(0));
@@ -192,8 +193,9 @@ void loop() {
   //Calculate pwm to send to each motor
   rpm_left = Vleft * (60/dpr);
   rpm_right = Vright * (60/dpr);
-  rpm_left = 10;
-  rpm_right = 10;
+  //rpm_left = -20;
+  //rpm_right = -20;
+  
 
   node.writeSingleRegister(0x203A,rpm_left); //target speed, rpm (negative)
   node2.writeSingleRegister(0x203A,rpm_right*-1); //target speed, rpm
@@ -219,7 +221,7 @@ void loop() {
   nh.spinOnce();
   */
   old_time = new_time;
-/* unsigned long currentTime = millis();
+ /*unsigned long currentTime = millis();
   if(timeElapsed >= 500)
   {  //might be broken
     linear_vel = 0;
@@ -312,10 +314,13 @@ enc_newR = node.getResponseBuffer(1);
 void Calculate_Odom()
 {
 
-   
-    Right_Wheel_enc();
-    Left_Wheel_enc();
-    
+
+   encoderValue = enc_oldL;
+   encoderValue = enc_oldR;
+
+   inc_encL = enc_newL - enc_oldL;
+   inc_encR = enc_newR - enc_oldR;
+
    length_error = (inc_encR - inc_encL) * rate_enc;
 
    ang_z_error = length_error/(Dbase);
@@ -325,6 +330,9 @@ void Calculate_Odom()
 
    Xw = Xw + (delta_d * cos(ang_z));
    Yw = Yw + (delta_d * sin(ang_z));
+
+   enc_oldL = enc_newL;
+   enc_oldR = enc_newR;
 
 }
 
@@ -345,8 +353,7 @@ int MSB = digitalRead(encoderRB); //MSB = most significant bit
 int LSB = digitalRead(encoderRA); //LSB = least significant bit
 int encoded2 = (MSB << 1) |LSB; //converting the 2 pin value to single number
 int sum = (lastEncoded2 << 2) | encoded2; //adding it to the previous encoded value
-if(sum == 0b1101 || sum == 0b0100 || sum == 0b0010 || sum == 0b1011) {encoderValue= encoderValue2+1;}
-if(sum == 0b1110 || sum == 0b0111 || sum == 0b0001 || sum == 0b1000) {encoderValue= encoderValue2-1;}
+if(sum == 0b1101 || sum == 0b0100 || sum == 0b0010 || sum == 0b1011) {encoderValue2= encoderValue2+1;}
+if(sum == 0b1110 || sum == 0b0111 || sum == 0b0001 || sum == 0b1000) {encoderValue2= encoderValue2-1;}
 //17000 is the current 1 revolution encoder feedback with ch 1 as A-and ch2 as B+
 lastEncoded2 = encoded2; //store this value for next time
-}
