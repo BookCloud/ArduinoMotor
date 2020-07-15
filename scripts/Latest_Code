@@ -9,6 +9,10 @@
 
 ros::NodeHandle nh; //start ros node
 
+geometry_msgs::TransformStamped t;
+tf::TransformBroadcaster broadcaster;
+
+
 //Hardware measurements
 const float Dbase = 0.3; //distance between wheels in metres
 const float dbase = Dbase/2;
@@ -18,8 +22,8 @@ const float dpr = 0.5307; //dist per rev of wheel
 const float sum_enc = 4096*4; //total pulses per rev of encoder
 const float rate_enc = (2*PI*wheelR) / sum_enc;
 
-float angular_vel = 0.3;
-float linear_vel = 0.5;
+float angular_vel = 0.0;
+float linear_vel = 0.0;
 float Vright = 0.0; //Velocity of right wheel
 float Vleft = 0.0; //Velocity of left wheel
 float rpm_left = 0.0;
@@ -55,8 +59,8 @@ float difference_R;
 
 float ang_z = 0.0;
 float ang_z_error;
-float Xw = 0.0;
-float Yw = 0.0;
+double Xw = 0.0;
+double Yw = 0.0;
 float delta_d;
 
 char base_link[] = "/base_link";
@@ -97,8 +101,6 @@ std_msgs::Float32 incencR;
 ros::Publisher incencRPub("inc_encR", &incencR);
 
 
-geometry_msgs::TransformStamped t;
-tf::TransformBroadcaster broadcaster;
 
 ModbusMaster node;                    //object node for class ModbusMaster
 ModbusMaster node2; 
@@ -128,6 +130,7 @@ void setup() {
   nh.advertise(encLPub);
   nh.advertise(incencLPub);
   nh.advertise(incencRPub);
+  broadcaster.init(nh);
  
   pinMode(MAX485_RE_NEG, OUTPUT);
   pinMode(MAX485_DE, OUTPUT);
@@ -208,7 +211,7 @@ void loop() {
   timeElapsed = new_time - old_time;
 
   //Calculate_Odom();
-
+/*
   Serial.print("This is encoder new value  ");
   Serial.println(inc_encL);
   //Serial.print("This is encoder old value  ");
@@ -223,9 +226,9 @@ void loop() {
   Serial.println(length_error);
   Serial.println(ang_z_error);
   Serial.println(delta_d);
-
+*/
   
-/*
+
   t.header.frame_id = odom;
   t.child_frame_id = base_link;
   
@@ -237,14 +240,8 @@ void loop() {
   
   broadcaster.sendTransform(t);
   nh.spinOnce();
-  
-  old_time = new_time;
- unsigned long currentTime = millis();
-  if(timeElapsed >= 500)
-  {  //might be broken
-    linear_vel = 0;
-    angular_vel = 0;
-  }*/
+  delay(10);
+
    encoder_newValue = encoderValue;
    encoder_newValue2 = encoderValue2;
 
@@ -277,7 +274,7 @@ void loop() {
   incencR.data = inc_encR;
   incencRPub.publish( &incencR);
   
- // nh.spinOnce();
+ //nh.spinOnce();
   
 }
 
