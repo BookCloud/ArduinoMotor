@@ -60,7 +60,7 @@ unsigned long old_time;
 void messageCb( const geometry_msgs::Twist &cmd_msg) {
 angular_vel=cmd_msg.angular.z;
 linear_vel=cmd_msg.linear.x;
-unsigned long StartTime = millis();
+oldTime = millis();
 }
 
 ros::Subscriber<geometry_msgs::Twist> sub_vel("cmd_vel", &messageCb );
@@ -94,10 +94,10 @@ void postTransmission()
 
 void setup() {
 
-  nh.initNode();
-  nh.subscribe(sub_vel);
-  nh.advertise(encRPub);
-  nh.advertise(encLPub);
+  //nh.initNode();
+  //nh.subscribe(sub_vel);
+  //nh.advertise(encRPub);
+  //nh.advertise(encLPub);
 
 
   /*cli();//stop interrupts
@@ -125,6 +125,7 @@ sei();//allow interrupts*/
   digitalWrite(MAX485_DE, 0);
   digitalWrite(MAX485_RE_NEG2, 0);
   digitalWrite(MAX485_DE2, 0);
+  Serial.begin(9600);
   Serial1.begin(9600);
   Serial3.begin(9600);             //Default Baud Rate of motor as 115200
 
@@ -183,6 +184,9 @@ sei();//allow interrupts*/
 }*/
 
 unsigned long timeElapsed;
+unsigned long oldTime = 0;
+float angular_vel = 0.0;
+float linear_vel = 1.0;
 
 void loop() {
   //Calculate velocity of each wheel
@@ -200,29 +204,13 @@ void loop() {
 
   Left_Wheel_enc();
   Right_Wheel_enc();
-
-  new_time = millis();
-  timeElapsed = new_time - old_time;
-
-  Calculate_Odom();
-
-  t.header.frame_id = odom;
-  t.child_frame_id = base_link;
-  
-  t.transform.translation.x = Xw;
-  t.transform.translation.y = Yw;
-  
-  t.transform.rotation = tf::createQuaternionFromYaw(ang_z);
-  t.header.stamp = nh.now();
-  
-  broadcaster.sendTransform(t);
-  nh.spinOnce();
-  
-  old_time = new_time;
+  Serial.print(inc_encL);
+  Serial.println(inc_encR);
 
   unsigned long currentTime = millis();
-  if(timeElapsed >= 500)
-  {  //might be broken
+  timeElapsed = currentTime - oldTime;
+  if(timeElapsed >= 1000)
+  { 
     linear_vel = 0;
     angular_vel = 0;
   }
@@ -232,7 +220,7 @@ void loop() {
   encRPub.publish( &encR);
   encL.data = count_dracula;
   encLPub.publish( &encL);
-  nh.spinOnce();
+  //nh.spinOnce();
   
   
 }
