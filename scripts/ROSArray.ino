@@ -112,31 +112,30 @@ void setup() {
   nh.initNode();
   nh.subscribe(sub_vel);
   nh.advertise(ROSData_pub);
-  broadcaster.init(nh);
 
   ROSData.layout.dim = (std_msgs::MultiArrayDimension *)
     malloc(sizeof(std_msgs::MultiArrayDimension) * 8);
     ROSData.layout.dim[0].label = "linear vel";
     ROSData.layout.dim[0].size = 8;
-    ROSData.layout.dim[0].stride = 1*2;
+    ROSData.layout.dim[0].stride = 1*8;
     ROSData.layout.dim[1].label = "ang vel";
     ROSData.layout.dim[1].size = 8;
-    ROSData.layout.dim[1].stride = 1*2;
+    ROSData.layout.dim[1].stride = 1*8;
     ROSData.layout.dim[2].label = "left enc";
     ROSData.layout.dim[2].size = 8;
-    ROSData.layout.dim[2].stride = 1*2;
+    ROSData.layout.dim[2].stride = 1*8;
     ROSData.layout.dim[3].label = "right enc";
     ROSData.layout.dim[3].size = 8;
-    ROSData.layout.dim[3].stride = 1*2;
+    ROSData.layout.dim[3].stride = 1*8;
     ROSData.layout.dim[4].label = "rate enc";
     ROSData.layout.dim[4].size = 8;
-    ROSData.layout.dim[4].stride = 1*2;
+    ROSData.layout.dim[4].stride = 1*8;
     ROSData.layout.dim[5].label = "base dist";
     ROSData.layout.dim[5].size = 8;
-    ROSData.layout.dim[5].stride = 1*2;
+    ROSData.layout.dim[5].stride = 1*8;
     ROSData.layout.data_offset = 0;
-    ROSData.layout.dim_length = 6;
-    ROSData.data_length = 48;
+    ROSData.layout.dim_length = 8;
+    ROSData.data_length = 6;
     ROSData.data = (float *)malloc(sizeof(float)*8);
 
     nh.advertise(ROSData_pub);
@@ -258,3 +257,4 @@ void calOdom(){
   rightEncOld = encoderValue2;
 
 }
+
