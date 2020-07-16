@@ -1,5 +1,5 @@
 #include <ros.h>
-#include <geometry_msgs/Float64MultiArray.h>
+#include <std_msgs/Float64MultiArray.h>
 #include <geometry_msgs/Twist.h>
 #include <ros/time.h>
 #include <ModbusMaster.h>  //Library for using ModbusMaster
@@ -83,7 +83,7 @@ pressedTime = millis();
 
 std_msgs::Float64MultiArray ROSData;
 ros::Subscriber<geometry_msgs::Twist> sub_vel("cmd_vel", &messageCb );
-ros::Publisher ROSData_pub("ROSData",ROSData);
+ros::Publisher ROSData_pub("ROSData", &ROSData);
 
 //object node for class ModbusMaster
 ModbusMaster node;
@@ -258,4 +258,3 @@ void calOdom(){
   rightEncOld = encoderValue2;
 
 }
-
