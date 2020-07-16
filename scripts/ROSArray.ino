@@ -35,8 +35,8 @@ float result;
 float result2;
 
 //Odom variables
-volatile long leftEncInc;
-volatile long rightEncInc;
+float leftEncInc;
+float rightEncInc;
 float leftEncNew;
 float rightEncNew;
 volatile long leftEncOld = 0;
@@ -89,8 +89,9 @@ pressedTime = millis();
 }
 
 std_msgs::String ROSData;
-ros::Subscriber<geometry_msgs::Twist> sub_vel("cmd_vel", &messageCb );
-ros::Publisher ROSData_pub("ROS Data", &ROSData);
+ros::Subscriber<geometry_msgs::
+Twist> sub_vel("cmd_vel", &messageCb );
+ros::Publisher ROSData_pub("ROSData", &ROSData);
 
 //object node for class ModbusMaster
 ModbusMaster node;
@@ -185,12 +186,12 @@ void loop() {
   node2.writeSingleRegister(0x203A,rightRpm * -1); //target speed, rpm
 
   calOdom();
-  String s = dtostrf(linearVel, 5, 10, linear_val); // float to string
-  String s2 = dtostrf(angularVel, 5, 10, ang_val);
-  String s3 = dtostrf(leftEncInc, 5, 10, leftEnc);
-  String s4 = dtostrf(rightEncInc, 5, 10, rightEnc);
-  String s5 = dtostrf(rateEnc, 5, 10, rateEncoder); 
-  String s6 = dtostrf(baseDistance, 5, 10, baseDist);
+  String s = dtostrf(linearVel, 1, 10, linear_val); // float to string
+  String s2 = dtostrf(angularVel, 1, 10, ang_val);
+  String s3 = dtostrf(leftEncInc, 1, 10, leftEnc);
+  String s4 = dtostrf(rightEncInc, 1, 10, rightEnc);
+  String s5 = dtostrf(rateEnc, 1, 10, rateEncoder); 
+  String s6 = dtostrf(baseDistance, 1, 10, baseDist);
 
   strcpy (str,linear_val); 
   strcat (str,", ");
