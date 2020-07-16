@@ -10,8 +10,6 @@
 
 
 ros::NodeHandle nh; //start ros node
-geometry_msgs::TransformStamped t;
-tf::TransformBroadcaster broadcaster;
 
 //Hardware measurements
 const float baseDistance = 0.3; //distance between wheels in metres
@@ -62,8 +60,6 @@ double Xw = 0.0;
 double Yw = 0.0;
 float delta_d;
 
-char base_link[] = "/base_link";
-char odom[] = "/odom";
 unsigned long pressedTime;
 unsigned long currentTime;
 
@@ -95,8 +91,7 @@ std_msgs::Float32 leftEncRos;
 ros::Publisher leftEncPub("encL", &leftEncRos);
 std_msgs::Float32 rightEncRos;
 ros::Publisher rightEncPub("encR", &rightEncRos);
-nav_msgs::Odometry odomData;
-ros::Publisher odomPub("odom", &odomData);
+
 
 //object node for class ModbusMaster
 ModbusMaster node;
@@ -126,7 +121,6 @@ void setup() {
   nh.subscribe(sub_vel);
   nh.advertise(rightEncPub);
   nh.advertise(leftEncPub);
-  nh.advertise(odomPub);
   broadcaster.init(nh);
 
   pinMode(MAX485_RE_NEG, OUTPUT);
@@ -239,37 +233,6 @@ void calOdom(){
   //reset encoder values
   leftEncOld = encoderValue;
   rightEncOld = encoderValue2;
-
-  //convert angle to quaternion
-  geometry_msgs::Quaternion odom_quat = tf::createQuaternionFromYaw(ang_z);
-  //publish transform over tf
-  t.header.frame_id = odom;
-  t.child_frame_id = base_link;
-  t.transform.translation.x = Xw;
-  t.transform.translation.y = Yw;
-  t.transform.rotation = odom_quat;
-  t.header.stamp = nh.now();
-  //send transform
-  broadcaster.sendTransform(t);
-
-  //publish odom message
-  odomData.header.stamp = nh.now();
-  odomData.header.frame_id = odom;
-
-  //set the position
-  odomData.pose.pose.position.x = Xw;
-  odomData.pose.pose.position.y = Yw;
-  odomData.pose.pose.position.z = 0.0;
-  odomData.pose.pose.orientation = odom_quat;
-
-  //set the velocity
-  odomData.child_frame_id = "base_link";
-  odomData.twist.twist.linear.x = linearVel;
-  odomData.twist.twist.linear.y = 0;
-  odomData.twist.twist.angular.z = angularVel;
-
-  //publish the message
-  odomPub.publish( &odomData);
 
   rightEncRos.data = 420;
   rightEncPub.publish( &rightEncRos);
