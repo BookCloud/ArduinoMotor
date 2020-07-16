@@ -8,6 +8,11 @@
 #include <nav_msgs/Odometry.h>
 #include <ModbusMaster.h>  //Library for using ModbusMaster
 
+
+ros::NodeHandle nh; //start ros node
+geometry_msgs::TransformStamped t;
+tf::TransformBroadcaster broadcaster;
+
 //Hardware measurements
 const float baseDistance = 0.3; //distance between wheels in metres
 const float baseHalf = baseDistance/2;
@@ -62,6 +67,7 @@ char odom[] = "/odom";
 unsigned long pressedTime;
 unsigned long currentTime;
 
+
 //encoder tick count variables
 int encoderLB=2; 
 int encoderLA=3; 
@@ -83,9 +89,6 @@ pressedTime = millis();
 }
 
 
-ros::NodeHandle nh; //start ros node
-geometry_msgs::TransformStamped t;
-tf::TransformBroadcaster broadcaster;
 
 ros::Subscriber<geometry_msgs::Twist> sub_vel("cmd_vel", &messageCb );
 std_msgs::Float32 leftEncRos;
@@ -117,17 +120,27 @@ void postTransmission()
 
 
 void setup() {
-  Serial.begin(57600);
-  Serial1.begin(9600);
-  Serial3.begin(9600);             //Default Baud Rate of motor as 115200
 
-  //setup ros stuff
+ //setup ros stuff
   nh.initNode();
   nh.subscribe(sub_vel);
   nh.advertise(rightEncPub);
   nh.advertise(leftEncPub);
   nh.advertise(odomPub);
   broadcaster.init(nh);
+
+  pinMode(MAX485_RE_NEG, OUTPUT);
+  pinMode(MAX485_DE, OUTPUT);
+  pinMode(MAX485_RE_NEG2, OUTPUT);
+  pinMode(MAX485_DE2, OUTPUT);
+  digitalWrite(MAX485_RE_NEG, 0);
+  digitalWrite(MAX485_DE, 0);
+  digitalWrite(MAX485_RE_NEG2, 0);
+  digitalWrite(MAX485_DE2, 0);
+  Serial.begin(57600);
+  Serial1.begin(9600);
+  Serial3.begin(9600);             //Default Baud Rate of motor as 115200
+
 
   node.begin(2, Serial1);            //Slave ID as 4, serialport 3
   node2.begin(4, Serial3);
@@ -146,11 +159,12 @@ void setup() {
   pinMode(encoderLA, INPUT);
   pinMode(encoderRB, INPUT);
   pinMode(encoderRA, INPUT);
+  
   attachInterrupt(digitalPinToInterrupt(encoderLA), updateEncoder, CHANGE); //left     //when i used encoderLB and encoderLA, does not interrupt 
   attachInterrupt(digitalPinToInterrupt(encoderLB), updateEncoder, CHANGE); //left     
   attachInterrupt(digitalPinToInterrupt(encoderRB), updateEncoder2, CHANGE); //right                  //uno only has 2 interrupt pins 2 & 3
   attachInterrupt(digitalPinToInterrupt(encoderRA), updateEncoder2, CHANGE); //right                  //mega has 6 interrupt pins 2 & 3 & 21 & 20 & 19 & 18 
-
+  
 
    
 }
@@ -166,15 +180,18 @@ void loop() {
   rightRpm = rightVel * (60/distPerRev);
   //rpm_left = -20;
   //rpm_right = -20;
-  
+
+ /*
   currentTime = millis();
   if((currentTime - pressedTime) >= 500){
     angularVel = 0;
     linearVel = 0;
   }
+*/
+
+  
   node.writeSingleRegister(0x203A,leftRpm); //target speed, rpm (negative)
   node2.writeSingleRegister(0x203A,rightRpm * -1); //target speed, rpm
-
 
   calOdom();
 
@@ -203,6 +220,7 @@ if(sum == 0b1110 || sum == 0b0111 || sum == 0b0001 || sum == 0b1000) {encoderVal
 //17000 is the current 1 revolution encoder feedback with ch 1 as A-and ch2 as B+
 lastEncoded2 = encoded2; //store this value for next time
 }
+
 
 void calOdom(){
   //calculate encoder increments
@@ -259,3 +277,4 @@ void calOdom(){
   leftEncPub.publish( &leftEncRos);
 
 }
+
