@@ -1,8 +1,9 @@
 #include <ros.h>
-#include <std_msgs/Float64MultiArray.h>
 #include <geometry_msgs/Twist.h>
 #include <ros/time.h>
 #include <ModbusMaster.h>  //Library for using ModbusMaster
+#include <std_msgs/String.h>
+
 
 
 ros::NodeHandle nh; //start ros node
@@ -72,6 +73,13 @@ volatile long encoderValue2;
 volatile long encoderNewValue;
 volatile long encoderNewValue2;
 
+char str[99];
+char linear_val[15];
+char ang_val[15];
+char leftEnc[15];
+char rightEnc[15];
+char rateEncoder[15];
+char baseDist[15];
 
 //ROS receive cmd_vel data subscriber
 void messageCb( const geometry_msgs::Twist &cmd_msg){
@@ -80,10 +88,9 @@ linearVel = cmd_msg.linear.x;
 pressedTime = millis();
 }
 
-
-std_msgs::Float64MultiArray ROSData;
+std_msgs::String ROSData;
 ros::Subscriber<geometry_msgs::Twist> sub_vel("cmd_vel", &messageCb );
-ros::Publisher ROSData_pub("ROSData", &ROSData);
+ros::Publisher ROSData_pub("ROS Data", &ROSData);
 
 //object node for class ModbusMaster
 ModbusMaster node;
@@ -112,33 +119,6 @@ void setup() {
   nh.initNode();
   nh.subscribe(sub_vel);
   nh.advertise(ROSData_pub);
-
-  ROSData.layout.dim = (std_msgs::MultiArrayDimension *)
-    malloc(sizeof(std_msgs::MultiArrayDimension) * 8);
-    ROSData.layout.dim[0].label = "linear vel";
-    ROSData.layout.dim[0].size = 8;
-    ROSData.layout.dim[0].stride = 1*8;
-    ROSData.layout.dim[1].label = "ang vel";
-    ROSData.layout.dim[1].size = 8;
-    ROSData.layout.dim[1].stride = 1*8;
-    ROSData.layout.dim[2].label = "left enc";
-    ROSData.layout.dim[2].size = 8;
-    ROSData.layout.dim[2].stride = 1*8;
-    ROSData.layout.dim[3].label = "right enc";
-    ROSData.layout.dim[3].size = 8;
-    ROSData.layout.dim[3].stride = 1*8;
-    ROSData.layout.dim[4].label = "rate enc";
-    ROSData.layout.dim[4].size = 8;
-    ROSData.layout.dim[4].stride = 1*8;
-    ROSData.layout.dim[5].label = "base dist";
-    ROSData.layout.dim[5].size = 8;
-    ROSData.layout.dim[5].stride = 1*8;
-    ROSData.layout.data_offset = 0;
-    ROSData.layout.dim_length = 8;
-    ROSData.data_length = 6;
-    ROSData.data = (float *)malloc(sizeof(float)*8);
-
-    nh.advertise(ROSData_pub);
 
   pinMode(MAX485_RE_NEG, OUTPUT);
   pinMode(MAX485_DE, OUTPUT);
@@ -205,12 +185,28 @@ void loop() {
   node2.writeSingleRegister(0x203A,rightRpm * -1); //target speed, rpm
 
   calOdom();
-  ROSData.data[0] = linearVel;
-  ROSData.data[1] = angularVel;
-  ROSData.data[2] = leftEncInc;
-  ROSData.data[3] = rightEncInc;
-  ROSData.data[4] = rateEnc;
-  ROSData.data[5] = baseDistance;
+  String s = dtostrf(linearVel, 5, 10, linear_val); // float to string
+  String s2 = dtostrf(angularVel, 5, 10, ang_val);
+  String s3 = dtostrf(leftEncInc, 5, 10, leftEnc);
+  String s4 = dtostrf(rightEncInc, 5, 10, rightEnc);
+  String s5 = dtostrf(rateEnc, 5, 10, rateEncoder); 
+  String s6 = dtostrf(baseDistance, 5, 10, baseDist);
+
+  strcpy (str,linear_val); 
+  strcat (str,", ");
+  strcat (str,ang_val);
+  strcat (str,", ");
+  strcat (str,leftEnc);
+  strcat (str,", ");
+  strcat (str,rightEnc);
+  strcat (str,", ");
+  strcat (str,rateEncoder);
+  strcat (str,", ");
+  strcat (str,baseDist);
+  puts (str);
+
+  ROSData.data = str;
+  ROSData_pub.publish(&ROSData);
   nh.spinOnce();
 }
 
