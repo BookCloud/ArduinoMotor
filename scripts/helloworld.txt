@@ -1,0 +1,44 @@
+/*
+ * rosserial Publisher Example
+ * Prints "hello world!"
+ */
+
+#include <ros.h>
+#include <std_msgs/String.h>
+#include <std_msgs/Int16MultiArray.h>
+ros::NodeHandle  nh;
+
+std_msgs::String str_msg;
+ros::Publisher chatter("chatter", &str_msg);
+
+char str[99];
+char part1[99];
+char part2[12];
+char part3[12];
+
+void setup()
+{
+  nh.initNode();
+  nh.advertise(chatter);
+}
+float f1 = 9.0;
+float f2 = 88.123;
+void loop()
+{
+
+  String s = dtostrf(f1, 1, 10, part1); // float to string
+    String s2 = dtostrf(f2, 1, 5, part3);
+
+char* part2 = ",";
+
+  strcpy (str,part1); 
+  strcat (str,", ");
+  strcat (str,part3);
+//  strcat (str,"concatenated.");
+  puts (str);
+
+  str_msg.data = str;
+  chatter.publish( &str_msg );
+  nh.spinOnce();
+  delay(1000);
+}
