@@ -8,7 +8,7 @@ from std_msgs.msg import String
 
 class Odometry_Publisher:
     def __init__(self):
-        self.arduino_sub = rospy.Subscriber("/arduino/data", String, self.arduino_callback)
+        self.arduino_sub = rospy.Subscriber("/ROSData", String, self.arduino_callback)
         self.odom_pub = rospy.Publisher("/odom", Odometry, queue_size=50)
         self.odom_broadcaster = tf.TransformBroadcaster()
         
@@ -23,12 +23,15 @@ class Odometry_Publisher:
         rospy.spin()
   
     def arduino_callback(self, data):
-	    arduino_data = data.data.split(",")
+        arduino_data = data.data.split(",")
         #calculate odom with arduino data
-        leftEnc = arduino_data[2]
-        rightEnc = arduino_data[3]
-        rateEnc = arduino_data[4]
-        baseDistance = arduino_data[5]
+	linear_vel = float(arduino_data[0])
+	angular_vel = float(arduino_data[1])
+        leftEnc = float(arduino_data[2])
+        rightEnc = float(arduino_data[3])
+        rateEnc = float(arduino_data[4])
+        baseDistance = float(arduino_data[5])
+
         #imuData = data[4]
         
         
@@ -64,7 +67,7 @@ class Odometry_Publisher:
         odom.pose.pose = Pose(Point(self.x, self.y, 0), Quaternion(*odom_quat))
         odom.child_frame_id = "base_link"
 
-        odom.twist.twist = Twist(Vector3(arduino_data[0], 0, 0), Vector3(0, 0, arduino_data[1]))
+        odom.twist.twist = Twist(Vector3(linear_vel, 0.0, 0.0), Vector3(0.0, 0.0, angular_vel))
 
         self.odom_pub.publish(odom)
 
@@ -74,3 +77,4 @@ class Odometry_Publisher:
 if __name__ == "__main__":
     rospy.init_node("odometry_publisher")
     Odometry_Publisher()
+    
