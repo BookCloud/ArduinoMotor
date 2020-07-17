@@ -182,8 +182,8 @@ void loop() {
 */
 
   
-  node.writeSingleRegister(0x203A,leftRpm); //target speed, rpm (negative)
-  node2.writeSingleRegister(0x203A,rightRpm * -1); //target speed, rpm
+  node.writeSingleRegister(0x203A,leftRpm * -1); //target speed, rpm (negative)
+  node2.writeSingleRegister(0x203A,rightRpm); //target speed, rpm
 
   calOdom();
   String s = dtostrf(linearVel, 1, 10, linear_val); // float to string
