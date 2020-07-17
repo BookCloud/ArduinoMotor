@@ -23,7 +23,7 @@ class Odometry_Publisher:
         rospy.spin()
   
     def arduino_callback(self, data):
-		arduino_data = data.data.split(",")
+	    arduino_data = data.data.split(",")
         #calculate odom with arduino data
         leftEnc = arduino_data[2]
         rightEnc = arduino_data[3]
