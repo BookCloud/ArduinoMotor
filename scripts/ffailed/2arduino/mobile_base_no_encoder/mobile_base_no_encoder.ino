@@ -71,7 +71,7 @@ char nanoData[32];  //store encoder data from nano
 char *encoderArray[99]; //split data to left and right encoder
 char *ptr = NULL;
 unsigned long encoderTime = 0;  //time when retrieving data
-unsigned long encoderDelay = 10; //interval of retrievals (ms)
+unsigned long encoderInterval = 50; //interval of retrievals (ms)
 
 void preTransmission()            //Function for setting stste of Pins DE & RE of RS-485
 {
@@ -105,6 +105,7 @@ void setup() {
   digitalWrite(MAX485_RE_NEG2, 0);
   digitalWrite(MAX485_DE2, 0);
   Serial.begin(57600);
+  
   Serial1.begin(9600);
   Serial3.begin(9600);             //Default Baud Rate of motor as 115200
 
@@ -127,9 +128,6 @@ void setup() {
 }
 
 void loop() {
-
-  // put your main code here, to run repeatedly:
-
   //Calculate velocity of each wheel
   leftVel = linearVel + (angularVel * baseHalf);
   rightVel = linearVel - (angularVel * baseHalf);
@@ -137,8 +135,8 @@ void loop() {
   leftRpm = leftVel * (60 / distPerRev);
   rightRpm = rightVel * (60 / distPerRev);
 
-  node.writeSingleRegister(0x203A, 10); //target speed, rpm (negative) //motor is reversed physically
-  node2.writeSingleRegister(0x203A, 10); //target speed, rpm
+  node.writeSingleRegister(0x203A, leftRpm * -1); //target speed, rpm (negative) //motor is reversed physically
+  node2.writeSingleRegister(0x203A, rightRpm); //target speed, rpm
 
 
 
@@ -148,14 +146,17 @@ void loop() {
     linearVel = 0;
   }
 
-  if(millis() - encoderTime >= 1000){
-  Serial2.write(1);
+  if(millis() - encoderTime >= encoderInterval){
+  //Serial2.write(1);
+  sendOdom();
   encoderTime = millis();}
-  
+
+
+
+  nh.spinOnce();  
+}
 
   
-  nh.spinOnce();
-}
 
 
 //code to recieve encoder counts from Nano
@@ -165,25 +166,17 @@ void serialEvent2(){
 
   byte index = 0;
   ptr = strtok(nanoData, ",");  // takes a list of delimiters
-  
   while(ptr != NULL)
   {
       encoderArray[index] = ptr;
       index++;
       ptr = strtok(NULL, ",");  // takes a list of delimiters
   }
-
-    //Serial.println(nanoData);
-    Serial.println(nanoData);
     
-    Serial.print("Left encoder is ");
-    Serial.println(encoderArray[0]);
-    Serial.print("right encoder is ");
-    Serial.println(encoderArray[1]); 
-
-    
-
-    //sendOdom();
+    String(encoderArray[0]).toCharArray(leftEnc, 15);
+    String(encoderArray[1]).toCharArray(rightEnc, 15);
+   // Serial.println(nanoData);
+    sendOdom();
 }
 
 
@@ -197,19 +190,21 @@ void sendOdom(){
  
   strcpy (str, linear_val);
   strcat (str, ", ");
-  strcat (str, ang_val);
+  /*strcat (str, ang_val);
   strcat (str, ", ");
+  
   strcat (str, leftEnc);
   strcat (str, ", ");
   strcat (str, rightEnc);
   strcat (str, ", ");
+  
   strcat (str, rateEncoder);
   strcat (str, ", ");
-  strcat (str, baseDist);
+  strcat (str, baseDist);*/
   puts (str);
 
-
+  
   Serial.println(str);
-  //ROSData.data = str;
-  //ROSData_pub.publish(&ROSData);
+  ROSData.data = str;
+  ROSData_pub.publish(&ROSData);
 }
