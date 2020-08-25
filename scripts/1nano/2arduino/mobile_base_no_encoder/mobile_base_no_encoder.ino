@@ -119,12 +119,12 @@ void setup() {
   digitalWrite(MAX485_DE2, 0);
   Serial.begin(57600);
   
-  Serial1.begin(1000000);
-  Serial3.begin(1000000);             //Default Baud Rate of motor as 115200
+  Serial1.begin(9600);
+  Serial3.begin(9600);             //Default Baud Rate of motor as 115200
 
   Serial2.begin(1000000); //to communicate with encoder arduino
   
-  node.begin(2, Serial2);            //Slave ID as 2, serialport 3
+  node.begin(2, Serial3);            //Slave ID as 2, serialport 3
   node2.begin(4, Serial1);          //Slave ID as 4, serialport 1
   node.preTransmission(preTransmission);         //Callback for configuring RS-485 Transreceiver correctly
   node2.preTransmission(preTransmission); //Callback for configuring RS-485 Transreceiver correctly
@@ -158,8 +158,8 @@ void loop() {
   leftRpm = leftVel * (60 / distPerRev);
   rightRpm = rightVel * (60 / distPerRev);
 
-  //node.writeSingleRegister(0x203A, leftRpm * -1); //target speed, rpm (negative) //motor is reversed physically
-  //node2.writeSingleRegister(0x203A, rightRpm); //target speed, rpm
+  node.writeSingleRegister(0x203A, leftRpm * -1); //target speed, rpm (negative) //motor is reversed physically
+  node2.writeSingleRegister(0x203A, rightRpm); //target speed, rpm
 
 
 
@@ -173,7 +173,7 @@ void loop() {
   receiveEncoder();
 
   //periodically calculate and publish ultrasonic sensor value
-  ultraman();
+  //ultraman();
   
   nh.spinOnce();  
 }
@@ -183,10 +183,16 @@ void loop() {
 
 //code to recieve encoder counts from Nano
 void receiveEncoder(){
+  clearBuffer(); //clear serial buffer to receive the latest data
   recvBytesWithStartEndMarkers(); //receive data
   processNewData(); //process data
 }
 
+void clearBuffer(){
+  while(Serial2.available() >0){
+    Serial2.read();
+  }
+}
 void recvBytesWithStartEndMarkers() {
   static boolean recvInProgress = false;
   static byte ndx = 0;
@@ -195,8 +201,8 @@ void recvBytesWithStartEndMarkers() {
   byte rb;
    
 
-  while (Serial3.available() > 0 && newData == false) {
-    rb = Serial3.read();
+  while (Serial2.available() > 0 && newData == false) {
+    rb = Serial2.read();
 
     if (recvInProgress == true) {
       if (rb != endMarker) {
@@ -223,8 +229,8 @@ void recvBytesWithStartEndMarkers() {
 
 void processNewData() {
   if(newData == true){
-  int x = constructData(receivedBytes[0], receivedBytes[1]);
-    int y = constructData(receivedBytes[2], receivedBytes[3]);
+    int x = constructData(receivedBytes[0], receivedBytes[1], receivedBytes[2], receivedBytes[3]);
+    int y = constructData(receivedBytes[4], receivedBytes[5], receivedBytes[6], receivedBytes[7]);
     sendOdom(x, y);
 
   }
@@ -232,10 +238,12 @@ void processNewData() {
 }
 
 
-int constructData(uint8_t MSB, uint8_t LSB){
+int32_t constructData(uint32_t byte1, uint32_t byte2, uint32_t byte3, uint32_t byte4){
   
-  int encoderValue = (MSB << 8) | LSB;
-  return encoderValue;
+  int32_t bit16 = (byte2 << 8) | byte1;
+  int32_t bit24 = (byte3 << 16) | bit16;
+  int32_t bit32 = (byte4 << 24) | bit24;
+  return bit32;
 }
 
 
@@ -261,8 +269,13 @@ void sendOdom(int leftEncoderData, int rightEncoderData){
   strcat (str, ", ");
   strcat (str, baseDist);
   puts (str);
-
-  //Serial.println(leftEnc);
+  /*
+  Serial.print(rightEncoderData);
+  Serial.print(" ");
+  Serial.print(rightEncoderData, BIN);
+  Serial.print(" ");
+  Serial.println(rightEnc);
+  */
   ROSData.data = str;
   ROSData_pub.publish(&ROSData);
 }

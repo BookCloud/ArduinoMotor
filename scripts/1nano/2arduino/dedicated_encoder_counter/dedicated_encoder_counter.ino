@@ -1,22 +1,22 @@
 //encoder tick count variables
 int encoderLB = 2;
 int encoderLA = 3;
-int encoderRB = 19;
-int encoderRA = 18;
+int encoderRB = 4;
+int encoderRA = 5;
 volatile int lastEncoded = 0;
-volatile long encoderValue = -10000;
+volatile long encoderValue = 0;
 volatile int lastEncoded2 = 0;
-volatile long encoderValue2 = 9999;
+volatile long encoderValue2 = 0;
 volatile long encoderNewValue;
 volatile long encoderNewValue2;
 
 unsigned long lastTime = 0;
-const int timeDelay = 10;
+const int timeDelay = 30;
 
 void setup()
 {
 
-  //Serial.begin(9600);
+  //Serial.begin(1000000);
   Serial1.begin(1000000);
   
   pinMode(encoderLB, INPUT);
@@ -39,6 +39,9 @@ void loop()
   if(millis() - lastTime >= timeDelay){
     
     sendData();
+    //Serial.print(encoderValue);
+    //Serial.print(" ");
+    //Serial.println(encoderValue2);
     lastTime = millis();
   }
 }
@@ -47,17 +50,28 @@ void loop()
 void sendData(){
 
   Serial1.write(0x3C); //start marker "<"
-  
-    int8_t MSB1 = encoderValue >> 8;  //send most significant bit
-    int8_t LSB1 = encoderValue;   //send least significant bit
-    Serial1.write(MSB1);
-    Serial1.write(LSB1);
 
+    //splits encoderValue into 4 bytes
+    int8_t byte1Enc1 = encoderValue;
+    int8_t byte2Enc1 = encoderValue >> 8;
+    int8_t byte3Enc1 = encoderValue >> 16;
+    int8_t byte4Enc1 = encoderValue >> 24;
+    //send the 4 bytes to mega
+    Serial1.write(byte1Left);
+    Serial1.write(byte2Left);
+    Serial1.write(byte3Left);
+    Serial1.write(byte4Left);
 
-    int8_t MSB2 = encoderValue2 >> 8;
-    int8_t LSB2 = encoderValue2;
-    Serial1.write(MSB2);
-    Serial1.write(LSB2);
+    //splits encoderValue2 into 4 bytes
+    int8_t byte1Enc2 = encoderValue2;
+    int8_t byte2Enc2 = encoderValue2 >> 8;
+    int8_t byte3Enc2 = encoderValue2 >> 16;
+    int8_t byte4Enc2 = encoderValue2 >> 24;
+    //send the 4 bytes to mega
+    Serial1.write(byte1Left);
+    Serial1.write(byte2Left);
+    Serial1.write(byte3Left);
+    Serial1.write(byte4Left);
   
   Serial1.write(0x3E); //end marker ">"
 }

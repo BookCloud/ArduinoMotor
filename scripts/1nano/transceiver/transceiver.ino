@@ -4,43 +4,118 @@ char c2[10];
 String a2;
 unsigned long x = 0;
 unsigned long y = 0;
-int trans = -6969;
-int16_t trans2 = 1000;
+
 
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(9600);
+  Serial.begin(1000000);
   Serial1.begin(1000000);
- // Serial.println("Hello World");
-
+  Serial.println("Hello World");
+   //test();
 }
 
 unsigned long tim = 0;
 unsigned long tim2 = 0;
 int8_t xb = B11110110;  // the 0b prefix indicates a binary constant
 
-
 void loop() {
   //Serial.println("Hello World");
-  if(millis() - tim >= 222){
-            //trans2 ++;
-           tim = millis();
+  if(micros() - tim >= 100){
+           //trans ++;
+           tim = micros();
   }
-  
-  if(millis() -tim2 >=15){
-   
+ event();
+  }
 
+  
+void test(){
+  
+  int32_t x = -1600000;
+  int32_t a4= x >> 24;
+  int32_t a3 = x >> 16;
+  int32_t a2 = x >> 8;
+  int32_t a1 = x;
+
+  uint32_t MSB2= a4;
+  uint32_t LSB2 = a3;
+  uint32_t MSB = a2;
+  uint32_t LSB = a1;
+  Serial.println(x);
+  Serial.println(LSB, BIN);
+  Serial.println(MSB, BIN);
+  Serial.println(LSB2, BIN);
+  Serial.println(MSB2, BIN);
+  Serial.println();
+  Serial.print(MSB2, BIN);
+  Serial.print(LSB2, BIN);
+  Serial.print(MSB, BIN);
+  Serial.print(LSB, BIN);
+  Serial.println();
+  Serial.println(x, BIN);
+  Serial.println();
+
+  int32_t p = (MSB<<8) | LSB;
+  int32_t q = (LSB2<<16) | p;
+  int32_t o = (MSB2<<24) | q;
+  int32_t f = o;
+    /* 11111111 11100111 10010110 00000000
+   * 11111111 11111111 10010110 00000000                
+              11100111 10010110   
+   
+   
+  
+   
+   */
+  Serial.println(LSB, BIN);
+  //Serial.println(x, BIN);
+  Serial.println(p, BIN);
+  //Serial.println(x, BIN);
+  Serial.println(LSB2<<16, BIN);
+  Serial.println(o, BIN);
+    Serial.println();
+    Serial.println(f, DEC);
+    Serial.println(f, BIN);
+
+}
+
+
+int32_t trans = -12345678;
+int32_t trans2 = -91620000;
+
+void event(){
+  if(millis() -tim2 >= 500){
+        
     Serial1.write(0x3C);
 
-    int8_t LSB1 = trans;
-    int8_t MSB1 = trans >> 8;
-    Serial1.write(MSB1);
-    Serial1.write(LSB1);
+    
+    int8_t LSB = trans;
+    int8_t MSB = trans >> 8;
+    int8_t LSB2 = trans >> 16;
+    int8_t MSB2 = trans >> 24;
 
-    int8_t LSB2 = trans2;
+    int8_t LSB31 = trans2;
+    int8_t MSB31 = trans2 >> 8;
+    int8_t LSB231 = trans2 >> 16;
+    int8_t MSB231 = trans2 >> 24;
+
+/*
+    Serial.print(LSB, BIN);
+    Serial.print(" ");
+    Serial.print(MSB, BIN);
+    Serial.print(" ");
+    Serial.print(LSB2, BIN);
+    Serial.print(" ");
+    Serial.println(MSB2, BIN);
+    */
+    Serial1.write(LSB);
+    Serial1.write(MSB);
+    Serial1.write(LSB2);
+    Serial1.write(MSB2);
+
+    /*int8_t LSB2 = trans2;
     int8_t MSB2 = trans2 >> 8;
     Serial1.write(MSB2);
-    Serial1.write(LSB2);
+    Serial1.write(LSB2);*/
 
 
     //Serial1.write(B11110110);
@@ -53,41 +128,13 @@ void loop() {
     //Serial1.write(B11110000);
 
     //Serial1.write(0x69);
+
+    Serial1.write(LSB31);
+    Serial1.write(MSB31);
+    Serial1.write(LSB231);
+    Serial1.write(MSB231);
     
     Serial1.write(0x3E);
-    //sen();
-      tim2 = millis();
+    tim2 = millis();
 }
-  
-  //event();
-
-  
-  }
-
-void sen(){
-  Serial1.write("12345");     // send high byte
-  //Serial.println("s");
-  //Serial1.write(359 && 0xFF);  // send low byte
-}
-
-
-void event(){
-  if(Serial1.available() > 0){
-   Serial.println(Serial1.read());
-   Serial1.write("111111,2222222");
-  }
-}
-
-void serialEvent(){
-  a = String(x);
-  a2 = String(y);
-  a.concat(",");
-  a.concat(a2);
-
-  //strcpy(c,y);
-  //puts(c);
-  a.toCharArray(c, 99);
-  Serial1.write("a");
-  Serial.println("hi");
-  Serial1.read();
 }
