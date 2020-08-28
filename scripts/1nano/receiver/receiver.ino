@@ -1,41 +1,40 @@
-
-// Example 6 - Receiving binary data
-
 const byte numBytes = 32;
 byte receivedBytes[numBytes];
 byte numReceived = 0;
 boolean newData = false;
 
 void setup() {
-    Serial.begin(1000000);
-    Serial2.begin(1000000);
+    Serial.begin(115200);
+    Serial2.begin(115200);
     Serial.println("<Arduino is ready>");
-    int y = (2<<8);
-    int x = (y << 8);
-    //Serial.print((y << 8), BIN);
 }
 
 void loop() {
-    clearbuffer();
-    recvBytesWithStartEndMarkers();
-    showNewData();
+    clearbuffer();    //remove old data from serial buffer
+    recvBytesWithStartEndMarkers(); //receive newest data
+    showNewData();    //process data
 }
 
 void clearbuffer(){
+  //while something in serial buffer, read and throw away the data
   while(Serial2.available() >0){
-    Serial2.read();
+    Serial2.read(); //do nothing with it
   }
 }
+
+
 void recvBytesWithStartEndMarkers() {
     static boolean recvInProgress = false;
     static byte ndx = 0;
-    byte startMarker = 0x3C;
-    byte endMarker = 0x3E;
+    byte startMarker = 0x3C;  // "<" hex to ascii
+    byte endMarker = 0x3E;    // ">"
     byte rb;
 
+    //wait for newest data to arrive
     while(Serial2.available() <= 0){
-      int wait = 0;
+      int wait = 0; //do nothing here
     }
+    // start reading
     while (Serial2.available() > 0 && newData == false) {
         rb = Serial2.read();
 
@@ -63,28 +62,21 @@ void recvBytesWithStartEndMarkers() {
 }
 
 void showNewData() {
+    //print the bytes received 1 by 1
     if (newData == true) {
-        //Serial.print("This... ");
         for (byte n = 0; n < numReceived; n++) {
             Serial.print(receivedBytes[n], BIN );
             Serial.print(' ');
         }
-        pars();     
+        pars(); //put the seperate bytes back to one piece     
         newData = false;
     }
 }
 
 void pars(){
-
-  //int re = pars(receivedBytes[0], receivedBytes[1]);
-  //int le = pars(receivedBytes[2], receivedBytes[3]);
-  //Serial.println();
-  //Serial.print(re,DEC);
-  //Serial.print(" ");
-  //Serial.print(le,DEC);
-
-    int32_t p = test(receivedBytes[0], receivedBytes[1], receivedBytes[2], receivedBytes[3] );
-    int32_t q = test(receivedBytes[4], receivedBytes[5], receivedBytes[6], receivedBytes[7] );
+    //  sort out the seperate bytes (HARDCODED!!!)  first 4bytes belong to the first integer sent by nano
+    int32_t p = combine(receivedBytes[0], receivedBytes[1], receivedBytes[2], receivedBytes[3] );
+    int32_t q = combine(receivedBytes[4], receivedBytes[5], receivedBytes[6], receivedBytes[7] );
 
     Serial.println();
     Serial.print("Parsed: ");
@@ -92,23 +84,10 @@ void pars(){
     Serial.print(" ");
     Serial.println(q);
 
-
-
-
 }
 
-int pars(uint8_t MSB, uint8_t LSB){
-  int rec = (MSB << 8) | LSB;
-  
-  //Serial.print(MSB, BIN);
-  //Serial.print(' ');
-  //Serial.print(LSB, BIN);
-  //Serial.print(' ');
-  //Serial.print(rec);
-  return rec;
-}
-
-int32_t test(uint32_t LSB, uint32_t MSB, uint32_t LSB2, uint32_t MSB2){
+//shifts the four 8bits back into a 32bit integer
+int32_t combine(uint32_t LSB, uint32_t MSB, uint32_t LSB2, uint32_t MSB2){
   int32_t two = (MSB << 8) | LSB;
   int32_t three = (LSB2 << 16) | two ;
   int32_t four = (MSB2 << 24) | three ;

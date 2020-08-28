@@ -16,18 +16,18 @@ const int timeDelay = 30;
 void setup()
 {
 
-  //Serial.begin(1000000);
-  Serial1.begin(1000000);
+  //Serial.begin(115200);
+  Serial1.begin(115200);
   
   pinMode(encoderLB, INPUT);
   pinMode(encoderLA, INPUT);
   pinMode(encoderRB, INPUT);
   pinMode(encoderRA, INPUT);
 
-  attachInterrupt(digitalPinToInterrupt(encoderLA), updateEncoder, CHANGE); //left     //when i used encoderLB and encoderLA, does not interrupt
+  attachInterrupt(digitalPinToInterrupt(encoderLA), updateEncoder, CHANGE); //left   
   attachInterrupt(digitalPinToInterrupt(encoderLB), updateEncoder, CHANGE); //left
-  attachInterrupt(digitalPinToInterrupt(encoderRB), updateEncoder2, CHANGE); //right                  //uno only has 2 interrupt pins 2 & 3
-  attachInterrupt(digitalPinToInterrupt(encoderRA), updateEncoder2, CHANGE); //right                  //mega has 6 interrupt pins 2 & 3 & 21 & 20 & 19 & 18
+  attachInterrupt(digitalPinToInterrupt(encoderRB), updateEncoder2, CHANGE); //right           
+  attachInterrupt(digitalPinToInterrupt(encoderRA), updateEncoder2, CHANGE); //right                 
 
   }
 
@@ -49,7 +49,7 @@ void loop()
 
 void sendData(){
 
-  Serial1.write(0x3C); //start marker "<"
+    Serial1.write(0x3C); //start marker "<"
 
     //splits encoderValue into 4 bytes
     int8_t byte1Enc1 = encoderValue;
@@ -57,10 +57,10 @@ void sendData(){
     int8_t byte3Enc1 = encoderValue >> 16;
     int8_t byte4Enc1 = encoderValue >> 24;
     //send the 4 bytes to mega
-    Serial1.write(byte1Left);
-    Serial1.write(byte2Left);
-    Serial1.write(byte3Left);
-    Serial1.write(byte4Left);
+    Serial1.write(byte1Enc1);
+    Serial1.write(byte2Enc1);
+    Serial1.write(byte3Enc1);
+    Serial1.write(byte4Enc1);
 
     //splits encoderValue2 into 4 bytes
     int8_t byte1Enc2 = encoderValue2;
@@ -68,12 +68,14 @@ void sendData(){
     int8_t byte3Enc2 = encoderValue2 >> 16;
     int8_t byte4Enc2 = encoderValue2 >> 24;
     //send the 4 bytes to mega
-    Serial1.write(byte1Left);
-    Serial1.write(byte2Left);
-    Serial1.write(byte3Left);
-    Serial1.write(byte4Left);
+    Serial1.write(byte1Enc2);
+    Serial1.write(byte2Enc2);
+    Serial1.write(byte3Enc2);
+    Serial1.write(byte4Enc2);
   
-  Serial1.write(0x3E); //end marker ">"
+    Serial1.write(0x3E); //end marker ">"
+
+  //Serial.println(encoderValue);
 }
 
 

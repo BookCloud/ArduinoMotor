@@ -1,9 +1,12 @@
 #include <ros.h>
 #include <geometry_msgs/Twist.h>
+#include <geometry_msgs/Point.h>
 #include <sensor_msgs/Range.h>
 #include <ros/time.h>
 #include <ModbusMaster.h>  //Library for using ModbusMaster
 #include <std_msgs/String.h>
+#include <std_msgs/Int32.h>
+
 #include <sensor_msgs/Range.h>
 
 ros::NodeHandle nh; //start ros node
@@ -66,6 +69,7 @@ const byte numBytes = 32;
 byte receivedBytes[numBytes];
 byte numReceived = 0;
 boolean newData = false;
+boolean start = false;
 
 
 //ultrasonic sensor variables
@@ -78,12 +82,17 @@ int duration;
 
 
 //setup ros publishers and subscribers
-ros::Subscriber<geometry_msgs:: //subscribe to cmd_vel
-Twist> sub_vel("cmd_vel", &messageCb );
-std_msgs::String ROSData; //publish to ROSData
+ros::Subscriber<geometry_msgs::Twist> sub_vel("cmd_vel", &messageCb );
+
+std_msgs::String ROSData;         //publish to ROSData
+//std_msgs::Int32 ROSData;        //try out different message typ
+//geometry_msgs::Point ROSData;        
+
 ros::Publisher ROSData_pub("ROSData", &ROSData);
-sensor_msgs::Range sonar_msg; //publish to sonar
+
+sensor_msgs::Range sonar_msg;     //publish to sonar
 ros::Publisher pub_sonar( "sonar1" , &sonar_msg);
+
 
 void preTransmission()            //Function for setting stste of Pins DE & RE of RS-485
 {
@@ -104,25 +113,23 @@ void postTransmission()
 void setup() {
 
   //setup ros stuff
+  nh.getHardware()->setBaud(115200);
   nh.initNode();
   nh.subscribe(sub_vel);  //subscribe to cmd_vel topic
   nh.advertise(ROSData_pub);  //publishes data for odometry
-  nh.advertise(pub_sonar); //publishes ultrasonic sensor data
+  //nh.advertise(pub_sonar); //publishes ultrasonic sensor data
 
   pinMode(MAX485_RE_NEG, OUTPUT);
   pinMode(MAX485_DE, OUTPUT);
-  //pinMode(MAX485_RE_NEG2, OUTPUT);
-  //pinMode(MAX485_DE2, OUTPUT);
   digitalWrite(MAX485_RE_NEG, 0);
   digitalWrite(MAX485_DE, 0);
   digitalWrite(MAX485_RE_NEG2, 0);
   digitalWrite(MAX485_DE2, 0);
-  Serial.begin(57600);
-  
+  //Serial.begin(115200);
   Serial1.begin(9600);
-  Serial3.begin(9600);             //Default Baud Rate of motor as 115200
+  Serial3.begin(9600);             //Default Baud Rate of motor is 115200
 
-  Serial2.begin(1000000); //to communicate with encoder arduino
+  Serial2.begin(115200); //to communicate with encoder arduino
   
   node.begin(2, Serial3);            //Slave ID as 2, serialport 3
   node2.begin(4, Serial1);          //Slave ID as 4, serialport 1
@@ -147,20 +154,13 @@ void setup() {
   sonar_msg.min_range = 0.0;
   sonar_msg.max_range = 10.0;
 
-  //Serial.println("ARduInO iS rEaDY");
 }
 
+
 void loop() {
-  //Calculate velocity of each wheel
-  leftVel = linearVel + (angularVel * baseHalf);
-  rightVel = linearVel - (angularVel * baseHalf);
-  //Calculate pwm to send to each motor
-  leftRpm = leftVel * (60 / distPerRev);
-  rightRpm = rightVel * (60 / distPerRev);
+  
 
-  node.writeSingleRegister(0x203A, leftRpm * -1); //target speed, rpm (negative) //motor is reversed physically
-  node2.writeSingleRegister(0x203A, rightRpm); //target speed, rpm
-
+  movement();
 
 
   // stops motor if no commands are received
@@ -175,10 +175,22 @@ void loop() {
   //periodically calculate and publish ultrasonic sensor value
   //ultraman();
   
-  nh.spinOnce();  
+  nh.spinOnce();
+
 }
 
   
+void movement(){
+  //Calculate velocity of each wheel
+  leftVel = linearVel + (angularVel * baseHalf);
+  rightVel = linearVel - (angularVel * baseHalf);
+  //Calculate pwm to send to each motor
+  leftRpm = leftVel * (60 / distPerRev);
+  rightRpm = rightVel * (60 / distPerRev);
+  //send rpm to motor
+  node.writeSingleRegister(0x203A, leftRpm * -1); //target speed, rpm (negative) //motor is reversed physically
+  node2.writeSingleRegister(0x203A, rightRpm); //target speed, rpm
+}
 
 
 //code to recieve encoder counts from Nano
@@ -188,56 +200,68 @@ void receiveEncoder(){
   processNewData(); //process data
 }
 
+
 void clearBuffer(){
-  while(Serial2.available() >0){
-    Serial2.read();
+  //while something in serial buffer, read and throw away the data
+  while(Serial2.available() > 0){
+    Serial2.read();   //do nothing with it
   }
 }
+
+
 void recvBytesWithStartEndMarkers() {
-  static boolean recvInProgress = false;
-  static byte ndx = 0;
-  byte startMarker = 0x3C;
-  byte endMarker = 0x3E;
-  byte rb;
-   
+    static boolean recvInProgress = false;
+    static byte ndx = 0;
+    byte startMarker = 0x3C;
+    byte endMarker = 0x3E;
+    byte rb;
+    
+    //wait for newest data to arrive
+    while(Serial2.available() <= 0){
+      int wait = 0;  //do nothing here
+    }
+    
+    // start reading
+    while (Serial2.available() > 0 && newData == false) {
+        rb = Serial2.read();
 
-  while (Serial2.available() > 0 && newData == false) {
-    rb = Serial2.read();
-
-    if (recvInProgress == true) {
-      if (rb != endMarker) {
-        receivedBytes[ndx] = rb;
-        ndx++;
-        if (ndx >= numBytes) {
-            ndx = numBytes - 1;
+        if (recvInProgress == true) {
+            if (rb != endMarker) {
+                receivedBytes[ndx] = rb;
+                ndx++;
+                if (ndx >= numBytes) {
+                    ndx = numBytes - 1;
+                }
+            }
+            else {
+                receivedBytes[ndx] = '\0'; // terminate the string
+                recvInProgress = false;
+                numReceived = ndx;  // save the number for use
+                ndx = 0;
+                newData = true;
+            }
         }
-      }
-      else {
-      receivedBytes[ndx] = '\0'; // terminate the string
-      recvInProgress = false;
-      numReceived = ndx;  // save the number for use when printing
-      ndx = 0;
-      newData = true;
-      }
-    }
 
-    else if (rb == startMarker) {
-      recvInProgress = true;
+        else if (rb == startMarker) {
+            recvInProgress = true;
+        }
     }
-  }
 }
+
 
 void processNewData() {
+  //  sort out the seperate bytes (HARDCODED!!!)  first 4bytes belong to the first integer sent by nano
   if(newData == true){
-    int x = constructData(receivedBytes[0], receivedBytes[1], receivedBytes[2], receivedBytes[3]);
-    int y = constructData(receivedBytes[4], receivedBytes[5], receivedBytes[6], receivedBytes[7]);
-    sendOdom(x, y);
-
+      int32_t x = constructData(receivedBytes[0], receivedBytes[1], receivedBytes[2], receivedBytes[3]);
+      int32_t y = constructData(receivedBytes[4], receivedBytes[5], receivedBytes[6], receivedBytes[7]);
+ 
+    sendOdom(x, y); //pass values to publish to ROS
+    newData = false;
   }
-  newData = false;
 }
 
 
+//combine the four 8bits back into a 32bit integer
 int32_t constructData(uint32_t byte1, uint32_t byte2, uint32_t byte3, uint32_t byte4){
   
   int32_t bit16 = (byte2 << 8) | byte1;
@@ -247,7 +271,7 @@ int32_t constructData(uint32_t byte1, uint32_t byte2, uint32_t byte3, uint32_t b
 }
 
 
-void sendOdom(int leftEncoderData, int rightEncoderData){
+void sendOdom(int32_t leftEncoderData, int32_t rightEncoderData){
   //send values required to calculate odom to ros as string
   String s = dtostrf(linearVel, 1, 5, linear_val); // float to string
   String s2 = dtostrf(angularVel, 1, 5, ang_val);
@@ -269,15 +293,11 @@ void sendOdom(int leftEncoderData, int rightEncoderData){
   strcat (str, ", ");
   strcat (str, baseDist);
   puts (str);
-  /*
-  Serial.print(rightEncoderData);
-  Serial.print(" ");
-  Serial.print(rightEncoderData, BIN);
-  Serial.print(" ");
-  Serial.println(rightEnc);
-  */
+  
   ROSData.data = str;
   ROSData_pub.publish(&ROSData);
+  nh.spinOnce();  
+
 }
 
 void ultraman(){
